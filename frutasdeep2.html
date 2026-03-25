@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mapa Interativo - Árvores Frutíferas IFES Cachoeiro</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e9f2e9 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 40, 0, 0.2);
+            overflow: hidden;
+            border: 1px solid #a5d6a5;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2e7d32 0%, #4caf50 50%, #81c784 100%);
+            color: white;
+            padding: 20px 30px;
+            border-bottom: 4px solid #1b5e20;
+        }
+
+        .header h1 {
+            font-size: 2.2em;
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.95;
+            margin-top: 8px;
+            font-style: italic;
+        }
+
+        .info-bar {
+            background-color: #f1f8e9;
+            padding: 15px 30px;
+            border-bottom: 2px solid #a5d6a5;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .stats {
+            background-color: #c8e6c9;
+            padding: 8px 16px;
+            border-radius: 30px;
+            font-weight: bold;
+            color: #1b5e20;
+            border: 1px solid #66bb6a;
+        }
+
+        .filter-container {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .filter-container label {
+            color: #2e7d32;
+            font-weight: 600;
+        }
+
+        #fruit-filter {
+            padding: 8px 15px;
+            border-radius: 20px;
+            border: 2px solid #4caf50;
+            background-color: white;
+            font-size: 0.95em;
+            min-width: 200px;
+            color: #1b5e20;
+            font-weight: 500;
+            cursor: pointer;
+            outline: none;
+        }
+
+        #fruit-filter:focus {
+            border-color: #2e7d32;
+            box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.3);
+        }
+
+        .count-badge {
+            background-color: #ffb74d;
+            color: #bf360c;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 0.9em;
+            border: 1px solid #f57c00;
+        }
+
+        .reset-btn {
+            background-color: #ffb74d;
+            border: none;
+            color: #bf360c;
+            padding: 6px 15px;
+            border-radius: 30px;
+            font-weight: bold;
+            cursor: pointer;
+            border: 1px solid #f57c00;
+            transition: all 0.2s;
+        }
+
+        .reset-btn:hover {
+            background-color: #ffa726;
+            transform: scale(1.02);
+        }
+
+        .main-content {
+            display: flex;
+            min-height: 700px;
+        }
+
+        .legend-section {
+            width: 35%;
+            background-color: #f9fff9;
+            border-right: 3px solid #a5d6a5;
+            padding: 20px;
+            overflow-y: auto;
+            max-height: 700px;
+        }
+
+        .legend-section h2 {
+            color: #1b5e20;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.5em;
+            border-bottom: 2px solid #4caf50;
+            padding-bottom: 10px;
+        }
+
+        .fruit-category {
+            margin-bottom: 25px;
+            border: 1px solid #c8e6c9;
+            border-radius: 15px;
+            overflow: hidden;
+        }
+
+        .fruit-header {
+            background: linear-gradient(135deg, #e8f5e8 0%, #c8e6c9 100%);
+            padding: 12px 15px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: bold;
+            color: #1b5e20;
+            border-bottom: 2px solid #4caf50;
+            transition: background 0.3s;
+        }
+
+        .fruit-header:hover {
+            background: linear-gradient(135deg, #d0ebd0 0%, #b8dfb8 100%);
+        }
+
+        .fruit-header .emoji {
+            font-size: 1.8em;
+        }
+
+        .fruit-header .name {
+            font-size: 1.3em;
+            flex-grow: 1;
+        }
+
+        .fruit-header .count {
+            background-color: #2e7d32;
+            color: white;
+            padding: 3px 12px;
+            border-radius: 20px;
+            font-size: 0.9em;
+        }
+
+        .fruit-header .arrow {
+            font-size: 1.2em;
+            transition: transform 0.3s;
+        }
+
+        .fruit-header.collapsed .arrow {
+            transform: rotate(-90deg);
+        }
+
+        .tree-list {
+            list-style: none;
+            padding: 10px;
+            background-color: white;
+            transition: all 0.3s;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .fruit-header.collapsed + .tree-list {
+            display: none;
+        }
+
+        .tree-item {
+            padding: 12px;
+            border-bottom: 1px dashed #c8e6c9;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .tree-item:hover {
+            background-color: #f1f8e9;
+        }
+
+        .tree-item.selected {
+            background-color: #c8e6c9;
+            border-left: 4px solid #2e7d32;
+        }
+
+        .tree-id {
+            background-color: #4caf50;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+
+        .tree-description {
+            color: #2e7d32;
+            font-weight: 500;
+            flex: 1;
+            min-width: 150px;
+        }
+
+        .tree-coords {
+            font-family: 'Courier New', monospace;
+            font-size: 0.85em;
+            background-color: #f1f8e9;
+            padding: 4px 10px;
+            border-radius: 15px;
+            color: #1b5e20;
+            border: 1px solid #a5d6a5;
+            display: inline-flex;
+            gap: 10px;
+        }
+
+        .coord-value {
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+        }
+
+        .coord-label {
+            color: #558b2f;
+            font-weight: bold;
+        }
+
+        .map-section {
+            width: 65%;
+            padding: 20px;
+            background: #e8f5e8;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .map-container {
+            width: 100%;
+            height: 600px;
+            border-radius: 15px;
+            overflow: hidden;
+            border: 3px solid #4caf50;
+            box-shadow: 0 4px 15px rgba(0, 40, 0, 0.3);
+            margin-bottom: 15px;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+        }
+
+        .map-controls {
+            background-color: white;
+            border-radius: 10px;
+            padding: 12px;
+            border: 1px solid #4caf50;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .map-controls button {
+            background-color: #f1f8e9;
+            border: 2px solid #4caf50;
+            color: #1b5e20;
+            padding: 8px 16px;
+            border-radius: 25px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .map-controls button:hover {
+            background-color: #4caf50;
+            color: white;
+        }
+
+        .map-controls .selected-info {
+            flex: 1;
+            text-align: right;
+            color: #2e7d32;
+            font-weight: 500;
+        }
+
+        .footer {
+            background-color: #2e7d32;
+            color: white;
+            text-align: center;
+            padding: 12px;
+            font-size: 0.9em;
+            border-top: 2px solid #1b5e20;
+        }
+
+        .badge {
+            background-color: #4caf50;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+        }
+
+        .info-window-content {
+            font-family: 'Segoe UI', sans-serif;
+            padding: 5px;
+            max-width: 250px;
+        }
+        
+        .info-window-content h4 {
+            color: #2e7d32;
+            margin-bottom: 5px;
+            font-size: 1.2em;
+            border-bottom: 1px solid #a5d6a5;
+            padding-bottom: 3px;
+        }
+        
+        .info-window-content p {
+            margin: 5px 0;
+            color: #1b5e20;
+        }
+        
+        .info-window-content .coords {
+            font-family: monospace;
+            background-color: #f1f8e9;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.85em;
+        }
+
+        .loading-message {
+            text-align: center;
+            padding: 50px;
+            color: #2e7d32;
+            font-size: 1.2em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🗺️ Mapa Interativo das Árvores Frutíferas</h1>
+            <p>Campus IFES Cachoeiro • Clique nos marcadores para ver detalhes • 81 árvores catalogadas</p>
+        </div>
+
+        <div class="info-bar">
+            <div class="stats" id="total-trees">🌳 Total: 81 árvores</div>
+            <div class="filter-container">
+                <label for="fruit-filter">🔍 Filtrar por fruta:</label>
+                <select id="fruit-filter">
+                    <option value="all">Todas as frutas</option>
+                </select>
+                <span class="count-badge" id="filter-count">81 árvores</span>
+                <button class="reset-btn" id="reset-filter">Mostrar todas</button>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="legend-section">
+                <h2>
+                    <span>📋 Árvores no Campus</span>
+                    <span class="badge" id="total-fruits">81</span>
+                </h2>
+                <div id="fruit-list-container">
+                    <div class="loading-message">Carregando árvores...</div>
+                </div>
+            </div>
+
+            <div class="map-section">
+                <div class="map-container">
+                    <div id="map"></div>
+                </div>
+                <div class="map-controls">
+                    <button id="zoom-in">➕ Zoom +</button>
+                    <button id="zoom-out">➖ Zoom -</button>
+                    <button id="recenter">🎯 Centralizar</button>
+                    <button id="show-all">🌳 Mostrar todas</button>
+                    <span class="selected-info" id="selected-tree-info">Clique em uma árvore na lista ou no mapa</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>🌱 Dados coletados no campus • Mapa interativo com Google Maps • 81 árvores catalogadas</p>
+            <p>Elementos gráficos por Tiphany Pereira, Thiffanny Martins e Rhayan de Paula (INNI2 G2)</p>
+        </div>
+    </div>
+
+    <script>
+        // Dados atualizados com coordenadas corrigidas
+        const treeData = [
+            { id: 1, nome: "Coqueiro", descricao: "Lado direito da entrada", coord1: -20.8022205181897, coord2: -41.1556335416248 },
+            { id: 2, nome: "Coqueiro", descricao: "Lado direito da entrada", coord1: -20.8023520331731, coord2: -41.1554734851373 },
+            { id: 3, nome: "Coqueiro", descricao: "Lado direito da entrada", coord1: -20.8024537052183, coord2: -41.1554577601452 },
+            { id: 4, nome: "Coqueiro", descricao: "Lado direito da entrada", coord1: -20.8025620364573, coord2: -41.1554553288306 },
+            { id: 5, nome: "Coqueiro", descricao: "Lado direito da entrada", coord1: -20.8026735344509, coord2: -41.1554565753547 },
+            { id: 6, nome: "Coqueiro", descricao: "Lado direito da entrada", coord1: -20.8027664704234, coord2: -41.1554985551405 },
+            { id: 7, nome: "Coqueiro", descricao: "Lado direito da entrada", coord1: -20.8028525606796, coord2: -41.1555612066468 },
+            { id: 8, nome: "Coqueiro", descricao: "Lado direito da entrada", coord1: -20.8030550290886, coord2: -41.1556631305861 },
+            { id: 9, nome: "Coqueiro", descricao: "Lado direito da entrada", coord1: -20.8032813169878, coord2: -41.1557047048237 },
+            { id: 10, nome: "Coqueiro", descricao: "Lado esquerdo da entrada", coord1: -20.8021925068350, coord2: -41.1553496982346 },
+            { id: 11, nome: "Coqueiro", descricao: "Lado esquerdo da entrada", coord1: -20.8022740635351, coord2: -41.1553060762485 },
+            { id: 12, nome: "Coqueiro", descricao: "Lado esquerdo da entrada", coord1: -20.8023928525627, coord2: -41.1552776271272 },
+            { id: 13, nome: "Coqueiro", descricao: "Lado esquerdo da entrada", coord1: -20.8026002898942, coord2: -41.1552652991746 },
+            { id: 14, nome: "Coqueiro", descricao: "Lado esquerdo da entrada", coord1: -20.8027137597667, coord2: -41.1552814203434 },
+            { id: 15, nome: "Jenipapeiro", descricao: "Lado direito da entrada", coord1: -20.8026785226509, coord2: -41.1556823805316 },
+            { id: 16, nome: "Mangueira", descricao: "Lado direito da entrada", coord1: -20.8026405709499, coord2: -41.1555899065388 },
+            { id: 17, nome: "Mangueira", descricao: "Lado direito da entrada", coord1: -20.8025014146314, coord2: -41.1556801250684 },
+            { id: 18, nome: "Mangueira", descricao: "Lado direito da entrada", coord1: -20.8024318364239, coord2: -41.1555087098621 },
+            { id: 19, nome: "Mangueira", descricao: "Lado esquerdo da quadra", coord1: -20.8024031994800, coord2: -41.1551383630651 },
+            { id: 20, nome: "Mangueira", descricao: "Lado esquerdo da quadra", coord1: -20.8025184424692, coord2: -41.1551725020107 },
+            { id: 21, nome: "Mangueira", descricao: "Atrás do B1", coord1: -20.8031707563911, coord2: -41.1543551116395 },
+            { id: 22, nome: "Mangueira", descricao: "Rua atrás da biblioteca", coord1: -20.8036892296602, coord2: -41.1546274799747 },
+            { id: 23, nome: "Cajazeira", descricao: "Lado direito da entrada", coord1: -20.8027639983725, coord2: -41.1557282092259 },
+            { id: 24, nome: "Cajueiro", descricao: "Lado esquerdo da entrada", coord1: -20.8023375554633, coord2: -41.1552717211656 },
+            { id: 25, nome: "Cajueiro", descricao: "Lado esquerdo da entrada", coord1: -20.8024779674989, coord2: -41.1552717211656 },
+            { id: 26, nome: "Cajueiro", descricao: "Lado esquerdo da entrada", coord1: -20.8022849009162, coord2: -41.1552985432544 },
+            { id: 27, nome: "Cajueiro", descricao: "Lado direito da entrada", coord1: -20.8028083225885, coord2: -41.1557832109660 },
+            { id: 28, nome: "Pitangueira", descricao: "Lado direito da entrada", coord1: -20.8028163009460, coord2: -41.1556570862863 },
+            { id: 29, nome: "Caramboleira", descricao: "Lado direito da entrada", coord1: -20.8030237380925, coord2: -41.1557462270373 },
+            { id: 30, nome: "Goiabeira", descricao: "Esquerda do pátio", coord1: -20.8028603715843, coord2: -41.1550472343880 },
+            { id: 31, nome: "Goiabeira", descricao: "Atrás do B7", coord1: -20.8026570661312, coord2: -41.1540475171890 },
+            { id: 32, nome: "Goiabeira", descricao: "Atrás do B7", coord1: -20.8027266451767, coord2: -41.1540830564496 },
+            { id: 33, nome: "Goiabeira", descricao: "Atrás do B9", coord1: -20.8025597945256, coord2: -41.1539877258370 },
+            { id: 34, nome: "Tamarindeiro", descricao: "Lado esquerdo da entrada", coord1: -20.8024152835706, coord2: -41.1552650156434 },
+            { id: 35, nome: "Abacateiro", descricao: "Lado esquerdo da entrada", coord1: -20.8027136588363, coord2: -41.1552717211656 },
+            { id: 36, nome: "Abacateiro", descricao: "Atrás do B7", coord1: -20.8026133646952, coord2: -41.1540084007812 },
+            { id: 37, nome: "Abacateiro", descricao: "Atrás do B7", coord1: -20.8026735411879, coord2: -41.1540405872878 },
+            { id: 38, nome: "Biribazeiro", descricao: "Lado esquerdo da entrada", coord1: -20.8023432755260, coord2: -41.1551588177293 },
+            { id: 39, nome: "Cajazeira", descricao: "Lado esquerdo da entrada", coord1: -20.8023972163101, coord2: -41.1551328658814 },
+            { id: 40, nome: "Limoeiro", descricao: "Lado esquerdo da entrada", coord1: -20.8022734593040, coord2: -41.1550669702508 },
+            { id: 41, nome: "Jambeiro", descricao: "Entre o B4 e o B6", coord1: -20.8026981580527, coord2: -41.1547362719420 },
+            { id: 42, nome: "Jambeiro", descricao: "Entre o B5 e o B7", coord1: -20.8027218833676, coord2: -41.1543541250398 },
+            { id: 43, nome: "Jambeiro", descricao: "Entre o B7 e o B9", coord1: -20.8025499163741, coord2: -41.1542511806092 },
+            { id: 44, nome: "Jambeiro", descricao: "Entre o B7 e o B9", coord1: -20.8025474090187, coord2: -41.1540982946968 },
+            { id: 45, nome: "Mexeriqueira", descricao: "Atrás do B9", coord1: -20.8025765919511, coord2: -41.1540006436870 },
+            { id: 46, nome: "Mexeriqueira", descricao: "Atrás do B9", coord1: -20.8026183366476, coord2: -41.1540189844736 },
+            { id: 47, nome: "Mexeriqueira", descricao: "Atrás do B9", coord1: -20.8024692483936, coord2: -41.1539472161775 },
+            { id: 48, nome: "Mexeriqueira", descricao: "Atrás do B7", coord1: -20.8026351259805, coord2: -41.1540300215563 },
+            { id: 49, nome: "Mexeriqueira", descricao: "Atrás do B7", coord1: -20.8026738888973, coord2: -41.1540659057039 },
+            { id: 50, nome: "Mexeriqueira", descricao: "Atrás do B7", coord1: -20.8027141426860, coord2: -41.1540842464906 },
+            { id: 51, nome: "Mexeriqueira", descricao: "Atrás do B5", coord1: -20.8027551419044, coord2: -41.1541105615325 },
+            { id: 52, nome: "Mexeriqueira", descricao: "Atrás do B5", coord1: -20.8027804868694, coord2: -41.1541161435111 },
+            { id: 53, nome: "Mexeriqueira", descricao: "Atrás do B5", coord1: -20.8028594457982, coord2: -41.1541612222807 },
+            { id: 54, nome: "Mexeriqueira", descricao: "Atrás do B3", coord1: -20.8029270063402, coord2: -41.1541885491062 },
+            { id: 55, nome: "Mexeriqueira", descricao: "Atrás do B3", coord1: -20.8029752728037, coord2: -41.1542401816292 },
+            { id: 56, nome: "Mexeriqueira", descricao: "Perto do estacionamento de trás", coord1: -20.8036628641525, coord2: -41.1548173352798 },
+            { id: 57, nome: "Amoreira", descricao: "Perto do galpão de mineração", coord1: -20.8036979022182, coord2: -41.1543939550096 },
+            { id: 58, nome: "Aceroleira", descricao: "Atrás do B5", coord1: -20.8028271808910, coord2: -41.1540917696144 },
+            { id: 59, nome: "Aceroleira", descricao: "Atrás do B5", coord1: -20.8028841082812, coord2: -41.1541165796732 },
+            { id: 60, nome: "Aceroleira", descricao: "Perto do estacionamento de trás", coord1: -20.8036181667371, coord2: -41.1550176497193 },
+            { id: 61, nome: "Pitombeira", descricao: "Atrás do B5", coord1: -20.8028672409081, coord2: -41.1540511713350 },
+            { id: 62, nome: "Bananeira", descricao: "Atrás do B5", coord1: -20.8029182571510, coord2: -41.1540485829755 },
+            { id: 63, nome: "Bananeira", descricao: "Atrás do B5", coord1: -20.8027559086442, coord2: -41.1539989628568 },
+            { id: 64, nome: "Bananeira", descricao: "Atrás do B5", coord1: -20.8026736801130, coord2: -41.1539301713287 },
+            { id: 65, nome: "Bananeira", descricao: "Atrás do B5", coord1: -20.8026283489805, coord2: -41.1539177662990 },
+            { id: 66, nome: "Bananeira", descricao: "Atrás do B5", coord1: -20.8026989812043, coord2: -41.1540677543850 },
+            { id: 67, nome: "Pinheiro", descricao: "Atrás do B3", coord1: -20.8029652494484, coord2: -41.1542149165157 },
+            { id: 68, nome: "Videira", descricao: "Atrás do B0", coord1: -20.8035659862132, coord2: -41.1544610467128 },
+            { id: 69, nome: "Videira", descricao: "Atrás do B0", coord1: -20.8036032580187, coord2: -41.1544474904792 },
+            { id: 70, nome: "Videira", descricao: "Atrás do B0", coord1: -20.8035726951389, coord2: -41.1544450982027 },
+            { id: 71, nome: "Siriguela", descricao: "Atrás do B0", coord1: -20.8035838766810, coord2: -41.1545264356046 },
+            { id: 72, nome: "Siriguela", descricao: "Atrás do B0", coord1: -20.8035950582223, coord2: -41.1545854450922 },
+            { id: 73, nome: "Bananeira", descricao: "Atrás do B0", coord1: -20.8036420206867, coord2: -41.1544769952230 },
+            { id: 74, nome: "Bananeira", descricao: "Atrás do B0", coord1: -20.8036927103153, coord2: -41.1545192587751 },
+            { id: 75, nome: "Bananeira", descricao: "Atrás do B0", coord1: -20.8037247640401, coord2: -41.1543996449488 },
+            { id: 76, nome: "Bananeira", descricao: "Atrás do B0", coord1: -20.8036688563734, coord2: -41.1545782682628 },
+            { id: 77, nome: "Bananeira", descricao: "Atrás do B0", coord1: -20.8037359455710, coord2: -41.1543111307174 },
+            { id: 78, nome: "Mamoeiro", descricao: "Perto do estacionamento de trás", coord1: -20.8036338208911, coord2: -41.1550312059530 },
+            { id: 79, nome: "Mamoeiro", descricao: "Perto do estacionamento de trás", coord1: -20.8036412752496, coord2: -41.1550782540580 },
+            { id: 80, nome: "Caquizeiro", descricao: "Perto do estacionamento de trás", coord1: -20.8036293482758, coord2: -41.1551300867161 },
+            { id: 81, nome: "Laranjeira", descricao: "Atrás da cozinha", coord1: -20.803587850412757, coord2: -41.155132252938756 }
+        ];
+
+        // Mapeamento de emojis para cada tipo de fruta
+        const fruitEmojis = {
+            "Coqueiro": "🥥",
+            "Jenipapeiro": "🟫",
+            "Mangueira": "🥭",
+            "Cajazeira": "🟡",
+            "Cajueiro": "🥜",
+            "Pitangueira": "🔴",
+            "Caramboleira": "⭐",
+            "Goiabeira": "🟢",
+            "Tamarindeiro": "🟤",
+            "Abacateiro": "🥑",
+            "Biribazeiro": "🟨",
+            "Limoeiro": "🍋",
+            "Jambeiro": "🍐",
+            "Mexeriqueira": "🍊",
+            "Amoreira": "🫐",
+            "Aceroleira": "🍒",
+            "Pitombeira": "🍇",
+            "Bananeira": "🍌",
+            "Pinheiro": "🌲",
+            "Videira": "🍇",
+            "Siriguela": "🟠",
+            "Mamoeiro": "🍈",
+            "Caquizeiro": "🍊",
+            "Laranjeira": "🍊"
+        };
+
+        const defaultEmoji = "🍎";
+
+        // Calcular centro aproximado do campus
+        const centerLat = -20.8028;
+        const centerLng = -41.1548;
+
+        // Variáveis globais
+        let map;
+        let markers = [];
+        let infoWindow;
+        let currentFilter = 'all';
+
+        // Função para obter emoji
+        function getEmoji(fruitName) {
+            return fruitEmojis[fruitName] || defaultEmoji;
+        }
+
+        // Formatar coordenada
+        function formatCoord(coord) {
+            return coord.toFixed(6);
+        }
+
+        // Cor baseada no tipo de fruta
+        function getColorForFruit(fruitName) {
+            const colors = {
+                'Coqueiro': '#8B4513',
+                'Mangueira': '#FFD700',
+                'Bananeira': '#FFE135',
+                'Goiabeira': '#90EE90',
+                'Laranjeira': '#FFA500',
+                'Limoeiro': '#32CD32',
+                'Abacateiro': '#228B22',
+                'Cajueiro': '#CD853F',
+                'Jenipapeiro': '#8B4513',
+                'Cajazeira': '#DAA520',
+                'Pitangueira': '#FF6347',
+                'Caramboleira': '#FFD700',
+                'Tamarindeiro': '#8B4513',
+                'Biribazeiro': '#F4A460',
+                'Jambeiro': '#FFB6C1',
+                'Mexeriqueira': '#FF8C00',
+                'Amoreira': '#800080',
+                'Aceroleira': '#FF4040',
+                'Pitombeira': '#9400D3',
+                'Pinheiro': '#006400',
+                'Videira': '#4B0082',
+                'Siriguela': '#FF7F50',
+                'Mamoeiro': '#FFA07A',
+                'Caquizeiro': '#FF7F50'
+            };
+            return colors[fruitName] || '#4CAF50';
+        }
+
+        // Inicializar mapa
+        function initMap() {
+            map = new google.maps.Map(document.getElementById('map'), {
+                center: { lat: centerLat, lng: centerLng },
+                zoom: 18,
+                mapTypeId: 'satellite',
+                styles: [
+                    {
+                        featureType: 'poi',
+                        elementType: 'labels',
+                        stylers: [{ visibility: 'off' }]
+                    }
+                ]
+            });
+
+            infoWindow = new google.maps.InfoWindow();
+
+            // Criar marcadores para todas as árvores
+            treeData.forEach(tree => {
+                const emoji = getEmoji(tree.nome);
+                
+                const marker = new google.maps.Marker({
+                    position: { lat: tree.coord1, lng: tree.coord2 },
+                    map: map,
+                    title: `${emoji} ${tree.nome} - ${tree.descricao}`,
+                    icon: {
+                        path: google.maps.SymbolPath.CIRCLE,
+                        scale: 10,
+                        fillColor: getColorForFruit(tree.nome),
+                        fillOpacity: 0.85,
+                        strokeWeight: 2,
+                        strokeColor: '#1b5e20'
+                    },
+                    label: {
+                        text: emoji,
+                        fontSize: '14px',
+                        className: 'marker-label'
+                    },
+                    id: tree.id
+                });
+
+                marker.addListener('click', () => {
+                    const content = `
+                        <div class="info-window-content">
+                            <h4>${emoji} ${tree.nome}</h4>
+                            <p><strong>ID:</strong> #${tree.id}</p>
+                            <p><strong>Local:</strong> ${tree.descricao}</p>
+                            <p><strong>Coordenadas:</strong></p>
+                            <p class="coords">Lat: ${formatCoord(tree.coord1)}<br>Lng: ${formatCoord(tree.coord2)}</p>
+                        </div>
+                    `;
+                    infoWindow.setContent(content);
+                    infoWindow.open(map, marker);
+                    highlightTreeInList(tree.id);
+                });
+
+                markers.push(marker);
+            });
+
+            // Após criar todos os marcadores, renderizar a lista
+            renderFruitList();
+            updateCounts();
+        }
+
+        // Filtrar marcadores
+        function filterMarkers(fruitName) {
+            markers.forEach((marker, index) => {
+                const tree = treeData[index];
+                if (fruitName === 'all' || tree.nome === fruitName) {
+                    marker.setMap(map);
+                } else {
+                    marker.setMap(null);
+                }
+            });
+        }
+
+        // Destacar árvore na lista
+        function highlightTreeInList(treeId) {
+            document.querySelectorAll('.tree-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            
+            const selectedItem = document.querySelector(`.tree-item[data-id="${treeId}"]`);
+            if (selectedItem) {
+                selectedItem.classList.add('selected');
+                selectedItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+            
+            const tree = treeData.find(t => t.id === treeId);
+            if (tree) {
+                document.getElementById('selected-tree-info').textContent = 
+                    `${getEmoji(tree.nome)} ${tree.nome} - ${tree.descricao}`;
+            }
+        }
+
+        // Agrupar por nome
+        function groupByFruit() {
+            const groups = {};
+            treeData.forEach(tree => {
+                if (!groups[tree.nome]) {
+                    groups[tree.nome] = [];
+                }
+                groups[tree.nome].push(tree);
+            });
+            return groups;
+        }
+
+        const fruitGroups = groupByFruit();
+
+        // Preencher filtro
+        const filterSelect = document.getElementById('fruit-filter');
+        Object.keys(fruitGroups).sort().forEach(fruit => {
+            const option = document.createElement('option');
+            option.value = fruit;
+            option.textContent = fruit;
+            filterSelect.appendChild(option);
+        });
+
+        // Atualizar contadores
+        function updateCounts() {
+            document.getElementById('total-trees').textContent = `🌳 Total: ${treeData.length} árvores`;
+            document.getElementById('total-fruits').textContent = treeData.length;
+            
+            const filtered = currentFilter === 'all' 
+                ? treeData 
+                : treeData.filter(t => t.nome === currentFilter);
+            document.getElementById('filter-count').textContent = `${filtered.length} árvores`;
+        }
+
+        // Renderizar lista de frutas
+        function renderFruitList() {
+            const container = document.getElementById('fruit-list-container');
+            container.innerHTML = '';
+            
+            const sortedFruits = Object.keys(fruitGroups).sort();
+            
+            sortedFruits.forEach(fruit => {
+                const trees = fruitGroups[fruit];
+                const emoji = getEmoji(fruit);
+                
+                const category = document.createElement('div');
+                category.className = 'fruit-category';
+                
+                const header = document.createElement('div');
+                header.className = 'fruit-header';
+                header.innerHTML = `
+                    <span class="emoji">${emoji}</span>
+                    <span class="name">${fruit}</span>
+                    <span class="count">${trees.length}</span>
+                    <span class="arrow">▼</span>
+                `;
+                
+                const list = document.createElement('ul');
+                list.className = 'tree-list';
+                
+                trees.sort((a, b) => a.id - b.id).forEach(tree => {
+                    const item = document.createElement('li');
+                    item.className = 'tree-item';
+                    item.setAttribute('data-id', tree.id);
+                    item.innerHTML = `
+                        <span class="tree-id">#${tree.id}</span>
+                        <span class="tree-description">${tree.descricao}</span>
+                        <span class="tree-coords">
+                            <span class="coord-value">
+                                <span class="coord-label">Lat:</span> ${formatCoord(tree.coord1)}
+                            </span>
+                            <span class="coord-value">
+                                <span class="coord-label">Lng:</span> ${formatCoord(tree.coord2)}
+                            </span>
+                        </span>
+                    `;
+                    
+                    item.addEventListener('click', () => {
+                        map.setCenter({ lat: tree.coord1, lng: tree.coord2 });
+                        map.setZoom(19);
+                        
+                        const marker = markers.find(m => m.id === tree.id);
+                        if (marker) {
+                            google.maps.event.trigger(marker, 'click');
+                        }
+                        
+                        highlightTreeInList(tree.id);
+                    });
+                    
+                    list.appendChild(item);
+                });
+                
+                header.addEventListener('click', () => {
+                    header.classList.toggle('collapsed');
+                });
+                
+                category.appendChild(header);
+                category.appendChild(list);
+                container.appendChild(category);
+            });
+        }
+
+        // Event listeners
+        filterSelect.addEventListener('change', (e) => {
+            currentFilter = e.target.value;
+            updateCounts();
+            filterMarkers(currentFilter);
+            
+            document.querySelectorAll('.fruit-header').forEach(header => {
+                const name = header.querySelector('.name').textContent;
+                if (currentFilter === 'all' || name === currentFilter) {
+                    header.classList.remove('collapsed');
+                } else {
+                    header.classList.add('collapsed');
+                }
+            });
+        });
+
+        document.getElementById('reset-filter').addEventListener('click', () => {
+            filterSelect.value = 'all';
+            currentFilter = 'all';
+            updateCounts();
+            filterMarkers('all');
+            document.querySelectorAll('.fruit-header').forEach(header => {
+                header.classList.remove('collapsed');
+            });
+        });
+
+        // Controles do mapa
+        document.getElementById('zoom-in').addEventListener('click', () => {
+            map.setZoom(map.getZoom() + 1);
+        });
+
+        document.getElementById('zoom-out').addEventListener('click', () => {
+            map.setZoom(map.getZoom() - 1);
+        });
+
+        document.getElementById('recenter').addEventListener('click', () => {
+            map.setCenter({ lat: centerLat, lng: centerLng });
+            map.setZoom(18);
+        });
+
+        document.getElementById('show-all').addEventListener('click', () => {
+            const bounds = new google.maps.LatLngBounds();
+            markers.forEach(marker => {
+                if (marker.getMap()) {
+                    bounds.extend(marker.getPosition());
+                }
+            });
+            map.fitBounds(bounds);
+        });
+
+        // Tornar initMap global
+        window.initMap = initMap;
+    </script>
+
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB41DRUbKWJHPxaFjMAwdrzWzbVKartNGg&callback=initMap&v=weekly" async defer></script>
+</body>
+</html>
